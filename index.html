@@ -175,9 +175,9 @@ html,body { height:100%; width:100%; font-family:var(--font-sans); background:va
   opacity:0; animation:fadeUp 0.55s ease 0.95s forwards;
 }
 .welcome-form {
-  width:100%; max-width:310px; margin-top:28px;
+  width:100%; max-width:340px; margin-top:24px;
   opacity:0; animation:fadeUp 0.55s ease 1.2s forwards;
-  display:flex; flex-direction:column; gap:12px;
+  display:flex; flex-direction:column; gap:14px;
 }
 .welcome-input {
   width:100%; padding:16px 20px; border-radius:16px;
@@ -1050,10 +1050,14 @@ button { touch-action: manipulation; }
   <div class="welcome-title">Voll AI</div>
   <div class="welcome-sub">Assistente Pallavolo Italiana</div>
   <div class="welcome-form">
-    <input class="welcome-input" id="welcomeNameInput" type="text" placeholder="Your name" autocomplete="off" spellcheck="false" maxlength="32">
-    <button class="welcome-btn" onclick="finishWelcome()">Get started</button>
+    <input class="welcome-input" id="welcomeNameInput" type="text" placeholder="Il tuo nome…" autocomplete="off" spellcheck="false" maxlength="32">
+    <div style="width:100%">
+      <div style="font-family:var(--font-sans);font-size:12px;color:var(--text3);text-align:center;margin-bottom:10px;letter-spacing:0.03em;text-transform:uppercase">Il tuo ruolo</div>
+      <div id="welcomeTitleGrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"></div>
+    </div>
+    <button class="welcome-btn" onclick="finishWelcome()">Inizia 🏐</button>
   </div>
-  <div class="welcome-skip" onclick="finishWelcome()">Skip</div>
+  <div class="welcome-skip" onclick="finishWelcome()">Salta</div>
 </div>
 
 <!-- ══ ARTIFACT PANEL ══ -->
@@ -1296,6 +1300,27 @@ button { touch-action: manipulation; }
           <div><span style="color:var(--accent);font-weight:600">Jump Serve eff.</span> — target top: 12-18% pt, &lt;8% errori</div>
           <div><span style="color:var(--accent);font-weight:600">Attacco eff.</span> — laterali ~35%, centrali &gt;50%, opposti ~30%</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Dati -->
+    <div class="settings-group">
+      <!-- Nome e Ruolo -->
+      <div class="settings-row" onclick="openEditNameModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <div class="settings-row-text">
+          <div class="settings-row-label" id="settingsNameVal">Il tuo nome</div>
+          <div class="settings-row-sub" id="settingsNameDisplay">Non impostato</div>
+        </div>
+        <div class="settings-row-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="settings-row" onclick="openEditTitleModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+        <div class="settings-row-text">
+          <div class="settings-row-label">Il tuo ruolo</div>
+          <div class="settings-row-sub" id="settingsTitleDisplay">Non impostato</div>
+        </div>
+        <div class="settings-row-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
       </div>
     </div>
 
@@ -1954,11 +1979,62 @@ function lsSet(key, val) { try { localStorage.setItem(LS_PREFIX + key, JSON.stri
 ══════════════════════════════════════════ */
 function getUserName() { return ls('user_name', null); }
 function setUserName(n) { lsSet('user_name', n); }
+function getUserTitle() { return ls('user_title', null); }
+function setUserTitle(t) { lsSet('user_title', t); }
+
+/* ── Volleyball titles ── */
+const VOLL_TITLES = [
+  { id:'allenatore',   label:'Allenatore',   emoji:'📋' },
+  { id:'giocatore',    label:'Giocatore',    emoji:'🏐' },
+  { id:'giocatrice',   label:'Giocatrice',   emoji:'🏐' },
+  { id:'arbitro',      label:'Arbitro',      emoji:'🟡' },
+  { id:'preparatore',  label:'Prep. Atletico',emoji:'💪' },
+  { id:'analista',     label:'Analista',     emoji:'📊' },
+  { id:'dirigente',    label:'Dirigente',    emoji:'🏆' },
+  { id:'appassionato', label:'Appassionato', emoji:'❤️' },
+  { id:'altro',        label:'Altro',        emoji:'✨' },
+];
+
+let _selectedWelcomeTitle = null;
+
+function _renderWelcomeTitleGrid() {
+  const grid = document.getElementById('welcomeTitleGrid');
+  if (!grid) return;
+  grid.innerHTML = VOLL_TITLES.map(t => `
+    <button onclick="_selectWelcomeTitle('${t.id}')" id="wtitle_${t.id}"
+      style="padding:10px 6px;border-radius:13px;border:1.5px solid var(--border);
+             background:var(--bg2);font-family:var(--font-sans);font-size:12px;font-weight:600;
+             color:var(--text2);cursor:pointer;display:flex;flex-direction:column;align-items:center;
+             gap:4px;transition:all 0.15s;touch-action:manipulation">
+      <span style="font-size:20px">${t.emoji}</span>
+      <span>${t.label}</span>
+    </button>`).join('');
+  // Re-select if already chosen
+  if (_selectedWelcomeTitle) _highlightWelcomeTitle(_selectedWelcomeTitle);
+}
+
+function _selectWelcomeTitle(id) {
+  _selectedWelcomeTitle = id;
+  _highlightWelcomeTitle(id);
+}
+
+function _highlightWelcomeTitle(id) {
+  VOLL_TITLES.forEach(t => {
+    const btn = document.getElementById('wtitle_' + t.id);
+    if (!btn) return;
+    const sel = t.id === id;
+    btn.style.borderColor = sel ? 'var(--accent)' : 'var(--border)';
+    btn.style.background  = sel ? 'rgba(var(--accentRgb),0.15)' : 'var(--bg2)';
+    btn.style.color       = sel ? 'var(--accent)' : 'var(--text2)';
+  });
+}
 
 function finishWelcome() {
   const inp = document.getElementById('welcomeNameInput');
   const name = inp ? inp.value.trim() : '';
   if (name) setUserName(name);
+  if (_selectedWelcomeTitle) setUserTitle(_selectedWelcomeTitle);
+  lsSet('welcomed', true); // mark as onboarded
   const ws = document.getElementById('welcomeScreen');
   ws.classList.add('fade-out');
   setTimeout(() => { ws.style.display = 'none'; initAfterWelcome(); }, 480);
@@ -1977,25 +2053,114 @@ function initAfterWelcome() {
 
 function updateUserUI() {
   const name = getUserName() || '';
+  const titleId = getUserTitle() || '';
+  const titleObj = VOLL_TITLES.find(t => t.id === titleId);
+  const titleLabel = titleObj ? titleObj.emoji + ' ' + titleObj.label : '';
   const initials = name ? name[0].toUpperCase() : '?';
   const el = document.getElementById('userAvatarSidebar');
   const nl = document.getElementById('userNameSidebar');
   if (el) el.textContent = initials;
   if (nl) nl.textContent = name || 'You';
   // Update settings name row
-  const sn = document.getElementById('settingsNameVal');
-  if (sn) sn.textContent = name || 'Not set';
+  const sn = document.getElementById('settingsNameDisplay');
+  if (sn) sn.textContent = name || 'Non impostato';
+  const st = document.getElementById('settingsTitleDisplay');
+  if (st) st.textContent = titleLabel || 'Non impostato';
 }
 
-function promptChangeName() {
+function promptChangeName() { openEditNameModal(); } // legacy compat
+
+function openEditNameModal() {
   const current = getUserName() || '';
-  const newName = window.prompt('Enter your name:', current);
-  if (newName === null) return; // cancelled
-  const trimmed = newName.trim();
-  setUserName(trimmed || null);
+  // Build inline modal
+  const existing = document.getElementById('_editNameModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = '_editNameModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,0.65);display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px)';
+  modal.innerHTML = `
+    <div style="background:var(--bg2);border-radius:24px 24px 0 0;width:100%;max-width:520px;border-top:1px solid var(--border);padding:24px 20px 40px;display:flex;flex-direction:column;gap:16px">
+      <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 4px"></div>
+      <div style="font-family:var(--font-sans);font-size:17px;font-weight:700;color:var(--text)">✏️ Il tuo nome</div>
+      <input id="_editNameInput" type="text" value="${escAttr(current)}" placeholder="Il tuo nome…" maxlength="32"
+        style="width:100%;padding:15px 18px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text);font-family:var(--font-sans);font-size:17px;outline:none;box-sizing:border-box;text-align:center"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('_editNameModal').remove()"
+          style="flex:1;padding:14px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);font-family:var(--font-sans);font-size:15px;font-weight:600;cursor:pointer">Annulla</button>
+        <button onclick="_saveEditedName()"
+          style="flex:2;padding:14px;border-radius:14px;border:none;background:var(--accent);color:white;font-family:var(--font-sans);font-size:15px;font-weight:600;cursor:pointer">Salva</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('_editNameInput')?.focus(), 80);
+}
+
+function _saveEditedName() {
+  const inp = document.getElementById('_editNameInput');
+  const val = inp ? inp.value.trim() : '';
+  setUserName(val || null);
+  updateUserUI(); setGreeting();
+  document.getElementById('_editNameModal')?.remove();
+  showToast(val ? `Nome: ${val}` : 'Nome rimosso');
+  haptic && haptic();
+}
+
+function openEditTitleModal() {
+  const currentId = getUserTitle() || '';
+  const existing = document.getElementById('_editTitleModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = '_editTitleModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,0.65);display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px)';
+  const chips = VOLL_TITLES.map(t => {
+    const sel = t.id === currentId;
+    return `<button onclick="_selectEditTitle('${t.id}')" id="_etitle_${t.id}"
+      style="padding:12px 8px;border-radius:14px;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};
+             background:${sel?'rgba(var(--accentRgb),0.15)':'var(--bg3)'};font-family:var(--font-sans);
+             font-size:13px;font-weight:600;color:${sel?'var(--accent)':'var(--text2)'};cursor:pointer;
+             display:flex;flex-direction:column;align-items:center;gap:5px;transition:all 0.15s;touch-action:manipulation">
+      <span style="font-size:22px">${t.emoji}</span>
+      <span>${t.label}</span>
+    </button>`;
+  }).join('');
+  modal.innerHTML = `
+    <div style="background:var(--bg2);border-radius:24px 24px 0 0;width:100%;max-width:520px;border-top:1px solid var(--border);padding:24px 20px 40px;display:flex;flex-direction:column;gap:16px">
+      <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 4px"></div>
+      <div style="font-family:var(--font-sans);font-size:17px;font-weight:700;color:var(--text)">🏐 Il tuo ruolo</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${chips}</div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button onclick="document.getElementById('_editTitleModal').remove()"
+          style="flex:1;padding:14px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);font-family:var(--font-sans);font-size:15px;font-weight:600;cursor:pointer">Annulla</button>
+        <button onclick="_saveEditedTitle()"
+          style="flex:2;padding:14px;border-radius:14px;border:none;background:var(--accent);color:white;font-family:var(--font-sans);font-size:15px;font-weight:600;cursor:pointer">Salva</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  window._pendingTitleEdit = currentId;
+}
+
+function _selectEditTitle(id) {
+  window._pendingTitleEdit = id;
+  VOLL_TITLES.forEach(t => {
+    const btn = document.getElementById('_etitle_' + t.id);
+    if (!btn) return;
+    const sel = t.id === id;
+    btn.style.borderColor = sel ? 'var(--accent)' : 'var(--border)';
+    btn.style.background  = sel ? 'rgba(var(--accentRgb),0.15)' : 'var(--bg3)';
+    btn.style.color       = sel ? 'var(--accent)' : 'var(--text2)';
+  });
+}
+
+function _saveEditedTitle() {
+  const id = window._pendingTitleEdit || null;
+  setUserTitle(id);
   updateUserUI();
-  setGreeting();
-  buildSystemPrompt && showToast(trimmed ? `Name set to ${trimmed}` : 'Name cleared');
+  document.getElementById('_editTitleModal')?.remove();
+  const obj = VOLL_TITLES.find(t => t.id === id);
+  showToast(obj ? `Ruolo: ${obj.emoji} ${obj.label}` : 'Ruolo rimosso');
   haptic && haptic();
 }
 
@@ -3112,8 +3277,19 @@ const WEBLLM_AVAILABLE = [
 ];
 
 (function init() {
-  // Voll AI: no sign-up, always go directly to chat
-  initAfterWelcome();
+  // Show welcome screen for first-time users who haven't completed onboarding
+  const hasWelcomed = ls('welcomed', false);
+  if (!hasWelcomed) {
+    const ws = document.getElementById('welcomeScreen');
+    if (ws) {
+      ws.style.display = 'flex';
+      setTimeout(_renderWelcomeTitleGrid, 100);
+    } else {
+      initAfterWelcome();
+    }
+  } else {
+    initAfterWelcome();
+  }
   // Init provider UI (runs after DOM ready)
   setTimeout(updateProviderUI, 100);
 })();
@@ -4393,7 +4569,7 @@ async function sendMsg() {
     removeTyping();
     const { text, artifacts } = parseResponse(stripPollinationsNotice(rawReply));
     addMsg('ai', text, false, artifacts);
-    if (autoSpeak && text) speakText(text, null);
+    if (false && autoSpeak && text) speakText(text, null); // speak disabled
     saveCurrentChat();
 
   } catch (err) {
@@ -4538,10 +4714,7 @@ function addMsg(role, text, silent, artifacts, searchHTML) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
           Share
         </button>
-        <button class="speak-btn" onclick="speakMessage(this)" data-text="${escAttr(text||'')}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-          Speak
-        </button>
+
       </div>
     </div>
   </div>`;
